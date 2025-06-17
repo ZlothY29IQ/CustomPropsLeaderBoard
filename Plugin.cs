@@ -18,11 +18,13 @@ namespace GorillaTagModTemplateProject
     {
         bool inRoom;
         string displayText = "";
-        bool showGUI = true;
-
+        bool showGUI = true;  //maybe add a proper clean & moveable GUI in the future...
+        bool showSelfProps = false;
         Font comicSansFont;
-        bool useComicSans = false;
-        int fontSize = 24;
+        bool useComicSans = true;
+        int fontSize = 18;
+        bool showPropertyValues = true;
+
 
         readonly string configFileName = $"{PluginInfo.GUID}.cfg";
 
@@ -51,12 +53,15 @@ namespace GorillaTagModTemplateProject
 
                 if (!File.Exists(path))
                 {
-                    
                     string defaultConfig = $"#{PluginInfo.Name}  Config\n\n" +
                                            "#Default Value=true\n" +
                                            "UseComicSans=true\n\n" +
                                            "#Default Value=18\n" +
-                                           "FontSize=18\n";
+                                           "FontSize=18\n\n" +
+                                           "#Default Value=false\n" +
+                                           "showSelfProps=false\n\n" +
+                                           "#Default Value=false\n" +
+                                           "ShowPropertyValues=false\n";
                     File.WriteAllText(path, defaultConfig);
                 }
 
@@ -78,15 +83,20 @@ namespace GorillaTagModTemplateProject
                         bool.TryParse(value, out useComicSans);
                     else if (key.Equals("FontSize", StringComparison.OrdinalIgnoreCase))
                         int.TryParse(value, out fontSize);
+                    else if (key.Equals("showSelfProps", StringComparison.OrdinalIgnoreCase))
+                        bool.TryParse(value, out showSelfProps);
+                    else if (key.Equals("ShowPropertyValues", StringComparison.OrdinalIgnoreCase))
+                        bool.TryParse(value, out showPropertyValues);
                 }
 
-                Debug.Log($"[{PluginInfo.Name}] Config loaded: UseComicSans={useComicSans}, FontSize={fontSize}");
+                Debug.Log($"[{PluginInfo.Name}] Config loaded: UseComicSans={useComicSans}, FontSize={fontSize}, ShowPropertyValues={showPropertyValues}");
             }
             catch (Exception e)
             {
                 Debug.LogError($"[{PluginInfo.Name}] Failed to load config: " + e);
             }
         }
+
 
         void OnEnable()
         {
@@ -114,14 +124,33 @@ namespace GorillaTagModTemplateProject
 
             foreach (Player player in PhotonNetwork.CurrentRoom.Players.Values)
             {
-                if (player == PhotonNetwork.LocalPlayer)
-                    continue;
+                if (!showSelfProps)
+                {
+                    if (player == PhotonNetwork.LocalPlayer)
+                        continue;
+                }
 
                 if (player.CustomProperties != null && player.CustomProperties.Count > 1)
                 {
-                    var keys = player.CustomProperties.Keys.Cast<string>().ToList();
-                    string props = string.Join("  -  ", keys);
-                    playerLines.Add($"{player.NickName} :    {props}\n ");
+                    List<string> props;
+
+                    if (showPropertyValues)
+                    {
+                        props = player.CustomProperties
+                            .Where(kvp => kvp.Value != null)
+                            .Select(kvp => $"{kvp.Key}: {kvp.Value.ToString().Replace("\n", "")}")
+                            .ToList();
+                    }
+                    else
+                    {
+                        props = player.CustomProperties.Keys
+                            .Cast<string>()
+                            .ToList();
+                    }
+
+                    string propsText = string.Join("  -  ", props);
+                    playerLines.Add($"{player.NickName} :    {propsText}\n");
+
                 }
             }
 

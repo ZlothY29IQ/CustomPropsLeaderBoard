@@ -7,6 +7,6 @@
 	{
 		public const string GUID = "com.zlothy.gorillatag.CustomPropsLeaderBoard";
 		public const string Name = "CustomPropsLeaderBoard";
-		public const string Version = "1.0.0";
+		public const string Version = "1.0.1";
 	}
 }
